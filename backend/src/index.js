@@ -1,3 +1,7 @@
+const path = require('path');
+require('dotenv').config({ 
+  path: path.resolve(__dirname, '../../.env')
+});
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -18,7 +22,7 @@ app.use(express.json());
 app.get('/api/health', async (req, res) => {
   try {
     await pool.query('SELECT 1');
-    res.json({ status: 'ok', database: 'up', version: process.env.APP_VERSION || 'dev' });
+    res.json({ status: 'ok', database: 'up', version: process.env.APP_VERSION});
   } catch {
     res.status(503).json({ status: 'error', database: 'down' });
   }
@@ -40,8 +44,8 @@ app.use((err, req, res, next) => {
 });
 
 async function seedAdmin() {
-  const email = process.env.ADMIN_EMAIL || 'admin@pustakaku.id';
-  const password = process.env.ADMIN_PASSWORD || 'admin123';
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
   const [rows] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
   if (rows.length === 0) {
     const hash = await bcrypt.hash(password, 10);
@@ -53,7 +57,7 @@ async function seedAdmin() {
   }
 }
 
-const PORT = Number(process.env.PORT || 5000);
+const PORT = Number(process.env.PORT);
 
 async function start() {
   await waitForDb();
