@@ -26,7 +26,6 @@ export default function Books({ user }) {
   useEffect(() => { api('/books/categories').then(setCategories).catch(() => {}); }, []);
   useEffect(() => { load(); }, [category]);
 
-  // Fitur pinjam
   const borrow = async (book) => {
     try {
       const r = await api('/loans', { method: 'POST', body: { book_id: book.id } });
@@ -37,7 +36,7 @@ export default function Books({ user }) {
     }
   };
 
-  // Fitur Reservasi
+
   const reserve = async (book) => {
     try {
       const r = await api('/reservations', { method: 'POST', body: { book_id: book.id } });

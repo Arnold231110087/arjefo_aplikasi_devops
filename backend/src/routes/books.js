@@ -102,7 +102,7 @@ router.post('/', authRequired, adminOnly, async (req, res, next) => {
   }
 });
 
-// PUT /api/books/:id (admin), stok tersedia menyesuaikan jumlah buku yang sedang dipinjam
+// PUT /api/books/:id (admin) - stok tersedia menyesuaikan jumlah buku yang sedang dipinjam
 router.put('/:id', authRequired, adminOnly, async (req, res, next) => {
   try {
     const error = validateBook(req.body);
@@ -110,7 +110,7 @@ router.put('/:id', authRequired, adminOnly, async (req, res, next) => {
     const [rows] = await pool.query('SELECT stock, available FROM books WHERE id = ?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ message: 'Buku tidak ditemukan' });
 
-    // dipinjam + yang ditahan untuk reservasi
+    //  dipinjam + yang ditahan untuk reservasi
     const borrowed = rows[0].stock - rows[0].available;
     const newStock = Number(req.body.stock);
     if (newStock < borrowed) {
@@ -123,7 +123,7 @@ router.put('/:id', authRequired, adminOnly, async (req, res, next) => {
       [title, author, isbn || null, category_id || null, year || null, newStock,
         newStock - borrowed, description || null, cover_url || null, req.params.id]
     );
-    // Stok bertambah sementara masih ada antrean reservasi, bagikan ke antrian
+     
     const conn = await pool.getConnection();
     let given = 0;
     try {
