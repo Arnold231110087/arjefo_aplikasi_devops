@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  database:
+    image: mysql:8.0
+    container_name: app-database
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: pustakaku_db
+      MYSQL_USER: dbuser
+      MYSQL_PASSWORD: dbpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - app-network
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: app-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=database
+      - DB_USER=root
+      - DB_PASSWORD=rootpassword
+      - DB_NAME=pustakaku_db
+      - DB_PORT=3306
+      - PORT=5000
+      - APP_VERSION=dev
+      - ADMIN_EMAIL=admin@pustakaku.id
+      - ADMIN_PASSWORD=admin123
+    depends_on:
+      - database
+    networks:
+      - app-network
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: app-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+volumes:
+  db_data:
+
+networks:
+  app-network:
+    driver: bridge
