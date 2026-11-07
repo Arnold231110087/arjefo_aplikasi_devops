@@ -1,0 +1,62 @@
+# docker-compose untuk PRODUCTION / tahap Continuous Deployment (Anggota 5)
+# Tidak melakukan build: image ditarik (pull) dari Docker Hub hasil pipeline CI.
+# Perintah: docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: pustakaku-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${DB_NAME:-pustakaku}
+      MYSQL_USER: ${DB_USER:-pustaka}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-pustakapass}
+      TZ: Asia/Jakarta
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [pustakaku-net]
+
+  backend:
+    image: ${DOCKERHUB_USERNAME:-pustakaku}/pustakaku-backend:${TAG:-latest}
+    container_name: pustakaku-backend
+    restart: always
+    environment:
+      PORT: 5000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-pustakaku}
+      DB_USER: ${DB_USER:-pustaka}
+      DB_PASSWORD: ${DB_PASSWORD:-pustakapass}
+      JWT_SECRET: ${JWT_SECRET:-ganti-dengan-rahasia-panjang}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@pustakaku.id}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      APP_VERSION: ${TAG:-latest}
+      TZ: Asia/Jakarta
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [pustakaku-net]
+
+  frontend:
+    image: ${DOCKERHUB_USERNAME:-pustakaku}/pustakaku-frontend:${TAG:-latest}
+    container_name: pustakaku-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "${APP_PORT:-80}:80"
+    networks: [pustakaku-net]
+
+volumes:
+  db_data:
+
+networks:
+  pustakaku-net:
+    driver: bridge
