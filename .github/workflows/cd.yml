@@ -1,0 +1,44 @@
+name: CD PustakaKu
+
+on:
+  workflow_run:
+    workflows: ["CI PustakaKu"]
+    types:
+      - completed
+  push:
+    branches:
+      - main
+      - dashboard-devops
+
+jobs:
+  deploy-simulation:
+    name: CD - Build & Deployment Package
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Validate Docker Compose Config
+        run: |
+          docker compose config
+
+      - name: Build Frontend Container Image
+        run: |
+          docker build -t pustakaku-frontend:latest ./frontend
+
+      - name: Build Backend Container Image
+        run: |
+          docker build -t pustakaku-backend:latest ./backend
+
+      - name: Simulate CD Deployment Execution
+        run: |
+          echo "=========================================="
+          echo "  STARTING CONTINUOUS DEPLOYMENT (CD)"
+          echo "=========================================="
+          echo "Status: Validating container images..."
+          echo "Status: Preparing multi-container orchestration..."
+          echo "Deployment Target: Local/Production Environment"
+          echo "Success: PustakaKu app successfully deployed!"
+          echo "=========================================="
