@@ -71,10 +71,21 @@ jobs:
           ref: ${{ env.SHA }}
       - uses: docker/setup-buildx-action@v3
       - name: Login Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DOCKERHUB_USERNAME" ]; then
+            echo "::error::GitHub Secret DOCKERHUB_USERNAME belum diatur."
+            exit 1
+          fi
+          if [ -z "$DOCKERHUB_TOKEN" ]; then
+            echo "::error::GitHub Secret DOCKERHUB_TOKEN belum diatur."
+            exit 1
+          fi
+          # Hilangkan CR/LF yang kadang ikut tersalin saat token ditempel sebagai secret.
+          printf '%s' "$DOCKERHUB_TOKEN" | tr -d '\r\n' | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
       - name: Build & push backend
         uses: docker/build-push-action@v6
         with:
@@ -130,7 +141,7 @@ jobs:
             docker image prune -f
             sleep 15
             curl -fs http://localhost/api/health
-            
+
   deploy-local:
     name: CD - Deploy ke Self-hosted Runner
     runs-on: self-hosted
