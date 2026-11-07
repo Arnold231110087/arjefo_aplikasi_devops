@@ -1,7 +1,3 @@
--- Skema database PustakaKu (Anggota 2)
--- Dijalankan otomatis oleh container MySQL saat pertama kali dibuat
--- (di-mount ke /docker-entrypoint-initdb.d/).
-
 SET NAMES utf8mb4;
 
 CREATE TABLE IF NOT EXISTS users (
