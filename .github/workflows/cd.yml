@@ -26,29 +26,29 @@ jobs:
       - name: Tunggu aplikasi siap
         run: |
           for i in $(seq 1 60); do
-            if curl -fs http://localhost:8080/api/health; then echo; echo "Aplikasi siap"; exit 0; fi
+            if curl -fs http://localhost/api/health; then echo; echo "Aplikasi siap"; exit 0; fi
             echo "Menunggu... ($i)"; sleep 3
           done
           echo "Aplikasi tidak siap"; exit 1
       - name: Smoke test API lewat Nginx
         run: |
           set -e
-          curl -fs http://localhost:8080/ | grep -q "PustakaKu"
-          curl -fs http://localhost:8080/api/books | grep -q "Laskar Pelangi"
-          TOKEN=$(curl -fs -X POST http://localhost:8080/api/auth/login \
+          curl -fs http://localhost/ | grep -q "PustakaKu"
+          curl -fs http://localhost/api/books | grep -q "Laskar Pelangi"
+          TOKEN=$(curl -fs -X POST http://localhost/api/auth/login \
             -H "Content-Type: application/json" \
             -d '{"email":"admin@pustakaku.id","password":"admin123"}' | jq -r .token)
           test "$TOKEN" != "null"
-          curl -fs http://localhost:8080/api/dashboard/stats -H "Authorization: Bearer $TOKEN" | jq .books
-          curl -fs -X POST http://localhost:8080/api/loans -H "Authorization: Bearer $TOKEN" \
+          curl -fs http://localhost/api/dashboard/stats -H "Authorization: Bearer $TOKEN" | jq .books
+          curl -fs -X POST http://localhost/api/loans -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" -d '{"book_id":1}' | jq .
           # Buku 7 stoknya 1: admin pinjam, lalu anggota baru masuk antrean reservasi
-          curl -fs -X POST http://localhost:8080/api/loans -H "Authorization: Bearer $TOKEN" \
+          curl -fs -X POST http://localhost/api/loans -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" -d '{"book_id":7}' | jq .
-          MEMBER=$(curl -fs -X POST http://localhost:8080/api/auth/register \
+          MEMBER=$(curl -fs -X POST http://localhost/api/auth/register \
             -H "Content-Type: application/json" \
             -d '{"name":"CI Bot","email":"ci@pustakaku.id","password":"rahasia"}' | jq -r .token)
-          curl -fs -X POST http://localhost:8080/api/reservations -H "Authorization: Bearer $MEMBER" \
+          curl -fs -X POST http://localhost/api/reservations -H "Authorization: Bearer $MEMBER" \
             -H "Content-Type: application/json" -d '{"book_id":7}' | jq -e '.position == 1'
           echo "Semua smoke test lulus"
       - name: Status container
