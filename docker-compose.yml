@@ -1,61 +1,68 @@
-version: '3.8'
+# docker-compose untuk DEVELOPMENT / build lokal (Anggota 5)
+# Menjalankan 3 container: db (MySQL), backend (Node.js), frontend (React + Nginx)
+# Perintah: docker compose up -d --build
 
 services:
-  database:
+  db:
     image: mysql:8.0
-    container_name: app-database
-    restart: always
+    container_name: pustakaku-db
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: pustakaku_db
-      MYSQL_USER: dbuser
-      MYSQL_PASSWORD: dbpassword
-    ports:
-      - "3306:3306"
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${DB_NAME:-pustakaku}
+      MYSQL_USER: ${DB_USER:-pustaka}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-pustakapass}
+      TZ: Asia/Jakarta
     volumes:
       - db_data:/var/lib/mysql
-    networks:
-      - app-network
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [pustakaku-net]
 
   backend:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: app-backend
-    restart: always
+    build: ./backend
+    image: pustakaku-backend:local
+    container_name: pustakaku-backend
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-pustakaku}
+      DB_USER: ${DB_USER:-pustaka}
+      DB_PASSWORD: ${DB_PASSWORD:-pustakapass}
+      JWT_SECRET: ${JWT_SECRET:-ganti-dengan-rahasia-panjang}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@pustakaku.id}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      APP_VERSION: local
+      TZ: Asia/Jakarta
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "5000:5000"
-    environment:
-      - DB_HOST=database
-      - DB_USER=root
-      - DB_PASSWORD=rootpassword
-      - DB_NAME=pustakaku_db
-      - DB_PORT=3306
-      - PORT=5000
-      - APP_VERSION=dev
-      - ADMIN_EMAIL=admin@pustakaku.id
-      - ADMIN_PASSWORD=admin123
-    depends_on:
-      - database
-    networks:
-      - app-network
+    networks: [pustakaku-net]
 
   frontend:
-    build: 
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: app-frontend
-    restart: always
-    ports:
-      - "80:80"
+    build: ./frontend
+    image: pustakaku-frontend:local
+    container_name: pustakaku-frontend
+    restart: unless-stopped
     depends_on:
       - backend
-    networks:
-      - app-network
+    ports:
+      - "${APP_PORT:-8080}:80"
+    networks: [pustakaku-net]
 
 volumes:
   db_data:
 
 networks:
-  app-network:
+  pustakaku-net:
     driver: bridge
